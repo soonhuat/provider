@@ -432,7 +432,7 @@ def asset_urls():
         asset = get_asset_from_metadatastore(get_metadata_url(), did)
         dt_token = get_dt_contract(get_web3(), asset.data_token_address)
 
-        if dt_token.caller.minter().lower() != publisher_address.lower():
+        if asset.publisher.lower() != publisher_address.lower():
             return Response(
                 json.dumps({"error": "Publisher address does not match minter."}),
                 400,
