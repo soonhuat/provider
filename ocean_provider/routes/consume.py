@@ -430,9 +430,6 @@ def asset_urls():
     logger.info(f"asset urls endpoint called. {data}")
     try:
         asset = get_asset_from_metadatastore(get_metadata_url(), did)
-        service = asset.get_service_by_index(service_id)
-        assert service.type == "access"
-
         dt_token = get_dt_contract(get_web3(), asset.data_token_address)
 
         if dt_token.caller.minter().lower() != publisher_address.lower():
