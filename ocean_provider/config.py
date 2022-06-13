@@ -148,7 +148,7 @@ class Config(configparser.ConfigParser):
 
     @property
     def allow_non_public_ip(self):
-        return self.get("resources", NAME_ALLOW_NON_PUBLIC_IP, fallback=None)
+        return bool(int(self.get("resources", NAME_ALLOW_NON_PUBLIC_IP, fallback=0)))
 
     @property
     def auth_token_message(self):

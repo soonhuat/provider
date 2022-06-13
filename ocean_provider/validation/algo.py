@@ -6,13 +6,12 @@ import json
 import logging
 
 from eth_utils import add_0x_prefix
+from web3.logs import DISCARD
+
 from ocean_provider.constants import BaseURLs
+from ocean_provider.myapp import app
 from ocean_provider.serializers import StageAlgoSerializer
-from ocean_provider.utils.basics import (
-    get_asset_from_metadatastore,
-    get_config,
-    get_metadata_url,
-)
+from ocean_provider.utils.basics import get_asset_from_metadatastore, get_config
 from ocean_provider.utils.datatoken import get_dt_contract, get_tx_receipt
 from ocean_provider.utils.did import did_to_id
 from ocean_provider.utils.url import append_userdata
@@ -22,12 +21,12 @@ from ocean_provider.utils.util import (
     filter_dictionary,
     filter_dictionary_starts_with,
     get_asset_download_urls,
+    get_metadata_url,
     msg_hash,
     record_consume_request,
     validate_order,
     validate_transfer_not_used_for_other_service,
 )
-from web3.logs import DISCARD
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +162,11 @@ class WorkflowValidator:
                 self.algo_service = algo.get_service_by_index(algo_service_id)
 
                 if self.algo_service.type == "compute":
-                    asset_urls = get_asset_download_urls(algo, self.provider_wallet)
+                    asset_urls = get_asset_download_urls(
+                        algo,
+                        self.provider_wallet,
+                        config_file=app.config["PROVIDER_CONFIG_FILE"],
+                    )
 
                     if not asset_urls:
                         self.error = "Services in algorithm with compute type must be in the same provider you are calling."
@@ -184,7 +187,6 @@ class WorkflowValidator:
                     if algorithm_did.startswith("did:")
                     else algorithm_did,
                     self.algo_service.index,
-                    self.algo_service.main["timeout"],
                 )
                 validate_transfer_not_used_for_other_service(
                     algorithm_did,
@@ -304,7 +306,11 @@ class InputItemValidator:
             self.error = "Service for main asset must be compute."
             return False
 
-        asset_urls = get_asset_download_urls(self.asset, self.provider_wallet)
+        asset_urls = get_asset_download_urls(
+            self.asset,
+            self.provider_wallet,
+            config_file=app.config["PROVIDER_CONFIG_FILE"],
+        )
 
         if self.service.type == "compute" and not asset_urls:
             self.error = "Services in input with compute type must be in the same provider you are calling."
@@ -348,7 +354,7 @@ class InputItemValidator:
 
         if trusted_publishers:
             algo_ddo = get_asset_from_metadatastore(get_metadata_url(), algorithm_did)
-            if algo_ddo.publisher not in trusted_publishers:
+            if not algo_ddo.publisher in trusted_publishers:
                 self.error = "this algorithm is not from a trusted publisher"
                 return False
 
@@ -438,7 +444,6 @@ class InputItemValidator:
                 if self.did.startswith("did:")
                 else self.did,
                 self.service.index,
-                self.service.main["timeout"],
             )
             validate_transfer_not_used_for_other_service(
                 self.did,

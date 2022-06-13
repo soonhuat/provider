@@ -21,7 +21,7 @@ install_requirements = [
     # Install ocean-utils first
     "ocean-contracts==0.6.7",
     "web3==5.25.0",
-    "Flask==2.1.2",
+    "Flask==1.1.2",
     "Flask-Cors==3.0.9",
     "flask_caching==1.10.1",
     "Flask-RESTful==0.3.8",
@@ -29,8 +29,12 @@ install_requirements = [
     "flask-swagger-ui==3.25.0",
     "Jinja2>=2.10.1",
     "gunicorn==20.0.4",
-    "coloredlogs==15.0.1",
-    "Werkzeug==2.0.3",
+    "osmosis-azure-driver==0.1.0",
+    "osmosis-aws-driver==0.1.0",
+    "osmosis-driver-interface==0.1.0",
+    "osmosis-on-premise-driver==0.1.0",
+    "osmosis-ipfs-driver==0.1.0",
+    "Werkzeug>=0.15.3",
     "requests_testadapter",
     "eciespy",
     "coincurve>=13,<15",
@@ -65,7 +69,7 @@ dev_requirements = [
     "python-dotenv==0.15.0",
     "flake8",
     "isort",
-    "black==22.1.0",
+    "black==21.4b0",
     "pre-commit",
     "licenseheaders",
     "pytest-env",
@@ -102,7 +106,7 @@ setup(
     url="https://github.com/oceanprotocol/provider-py",
     # fmt: off
     # bumpversion needs single quotes
-    version='0.4.24',
+    version='0.4.22',
     # fmt: on
     zip_safe=False,
 )
