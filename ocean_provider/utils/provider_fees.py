@@ -133,8 +133,8 @@ def get_provider_fees_or_remote(
                 {"environment": compute_env},
                 allow_expired_provider_fees=True,
             )
-            log_valid_until = _provider_fees_log.args.validUntil
-            if valid_until <= log_valid_until:
+            log_valid_until = _provider_fees_log.get('args').validUntil
+            if datetime.utcnow().timestamp() <= log_valid_until:
                 # already paid provider fees and both order and provider fees are still valid
                 return {"validOrder": "" + start_order_tx_id.hex()}
             else:
