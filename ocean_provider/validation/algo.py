@@ -287,15 +287,15 @@ def validate_formatted_algorithm_dict(algorithm_dict, algorithm_did):
         valid = False
         try :
             num_slash = sum(char == '/' for char in container["image"])
-            logger.info(f"validate_formatted_algorithm_dict container: {container}")
-            logger.info(f"validate_formatted_algorithm_dict num_slash: {num_slash}")
+            # logger.info(f"validate_formatted_algorithm_dict container: {container}")
+            # logger.info(f"validate_formatted_algorithm_dict num_slash: {num_slash}")
             if "TEMP_AWS_ECR_TRUSTEE" in os.environ and os.environ["TEMP_AWS_ECR_TRUSTEE"] and num_slash > 1:
                 aws_ecr_trustee_url = os.getenv("TEMP_AWS_ECR_TRUSTEE")
-                logger.info(f"validate_formatted_algorithm_dict TEMP_AWS_ECR_TRUSTEE: {aws_ecr_trustee_url}")
+                # logger.info(f"validate_formatted_algorithm_dict TEMP_AWS_ECR_TRUSTEE: {aws_ecr_trustee_url}")
                 response = requests.get(aws_ecr_trustee_url)
-                logger.info(f"validate_formatted_algorithm_dict TEMP_AWS_ECR_TRUSTEE response: {response.json()}")
+                # logger.info(f"validate_formatted_algorithm_dict TEMP_AWS_ECR_TRUSTEE response: {response.json()}")
                 for row in response.json():
-                    logger.info(f"validate_formatted_algorithm_dict row: {row}")
+                    # logger.info(f"validate_formatted_algorithm_dict row: {row}")
                     if row["image"] == container["image"] and row["tag"] == container["tag"] and row["digest"].lower() == container["checksum"].lower():
                         valid = True
                         break
