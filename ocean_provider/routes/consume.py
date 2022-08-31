@@ -38,7 +38,7 @@ from ocean_provider.validation.provider_requests import (
 )
 from web3.main import Web3
 
-from . import services
+from ocean_provider.routes import services
 
 provider_wallet = get_provider_wallet()
 requests_session = get_requests_session()
