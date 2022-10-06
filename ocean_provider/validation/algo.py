@@ -415,9 +415,16 @@ class InputItemValidator:
                 self.error = f"filesChecksum for algorithm with did {algo_ddo.did} does not match"
                 return False
 
+            algo_container = algo_ddo.metadata["algorithm"]["container"]
+            sanitized_algo_container = {
+                "entrypoint": algo_container.get("entrypoint"),
+                "image": algo_container.get("image"),
+                "tag": algo_container.get("tag"),
+                "checksum": algo_container.get("checksum")
+            }
             container_section_checksum = msg_hash(
                 json.dumps(
-                    algo_ddo.metadata["algorithm"]["container"], separators=(",", ":")
+                    sanitized_algo_container, separators=(",", ":")
                 )
             )
             if (
