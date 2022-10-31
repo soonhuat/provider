@@ -230,10 +230,10 @@
     "veFeeEstimate": "0xB3AB945aa7553EbC8Ce234a53b03a1bbA23E8fAB"
   },
   "polygonedge": {
-    "chainId": 96001,
+    "chainId": 81001,
     "Ocean": "0x61C9e793F3d5247cc12dB82b9DB733fC9ffBA812",
     "OPFCommunityFeeCollector": "0x8daC419D5D81Af8c8E795D0D73f64d5220e28cd8",
-    "startBlock": 40058,
+    "startBlock": 5180969,
     "Router": "0x86b77E56d54820544A64ADAC127a2F7dfBA753A2",
     "FixedPrice": "0x6d623B190357064234859586878D67440B719783",
     "Staking": "0x6b0B482fC953A62CCB3f1Ed655fda61042de85c4",
