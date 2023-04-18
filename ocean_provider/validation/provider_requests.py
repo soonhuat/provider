@@ -1,23 +1,21 @@
 #
-# Copyright 2021 Ocean Protocol Foundation
+# Copyright 2023 Ocean Protocol Foundation
 # SPDX-License-Identifier: Apache-2.0
 #
 import logging
-from datetime import datetime
 import os
+from datetime import datetime
 
 from flask import request as flask_request
 from flask_sieve import JsonRequest, ValidationException
 from flask_sieve.rules_processor import RulesProcessor
 from flask_sieve.validator import Validator
-
 from ocean_provider.exceptions import InvalidSignatureError
 from ocean_provider.file_types.file_types_factory import FilesTypeFactory
-from ocean_provider.utils.accounts import verify_signature, verify_nonce
-from ocean_provider.utils.util import get_request_data
 from ocean_provider.user_nonce import is_token_valid
+from ocean_provider.utils.accounts import verify_nonce, verify_signature
+from ocean_provider.utils.util import get_request_data
 from ocean_provider.validation.RBAC import RBACValidator
-
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +54,27 @@ class CustomJsonRequest(JsonRequest):
     def validate(self):
         for validator in self._validators:
             if validator.fails():
-                raise ValidationException(validator.messages())
+                messages = self.overwrite_messages(validator)
+                raise ValidationException(messages)
         return True
+
+    def overwrite_messages(self, validator):
+        messages = validator.messages()
+
+        if not hasattr(validator._processor, "signature_error_message"):
+            return messages
+
+        for overwritable_key in [
+            "signature",
+            "download_signature",
+            "decrypt_signature",
+        ]:
+            if overwritable_key in messages:
+                messages[
+                    overwritable_key
+                ] = validator._processor.signature_error_message
+
+        return messages
 
 
 class CustomValidator(Validator):
@@ -77,6 +94,14 @@ class CustomValidator(Validator):
         headers=None,
         **kwargs,
     ):
+        messages["signature.signature"] += " Please check the nonce or documentId."
+        messages[
+            "signature.download_signature"
+        ] += " Please check the nonce or documentId."
+        messages[
+            "signature.decrypt_signature"
+        ] += " Please check the nonce or documentId."
+
         super(CustomValidator, self).__init__(
             rules, request, custom_handlers, messages, **kwargs
         )
@@ -139,7 +164,8 @@ class CustomRulesProcessor(RulesProcessor):
         try:
             verify_signature(owner, value, original_msg, nonce)
             return True
-        except InvalidSignatureError:
+        except InvalidSignatureError as e:
+            self.signature_error_message = str(e)
             pass
 
         return False
@@ -170,7 +196,8 @@ class CustomRulesProcessor(RulesProcessor):
         try:
             verify_signature(owner, value, original_msg, nonce)
             return True
-        except InvalidSignatureError:
+        except InvalidSignatureError as e:
+            self.signature_error_message = str(e)
             pass
 
         return False
@@ -216,7 +243,8 @@ class CustomRulesProcessor(RulesProcessor):
             verify_signature(decrypter_address, value, original_msg, nonce)
             logger.info("Correct signature.")
             return True
-        except InvalidSignatureError:
+        except InvalidSignatureError as e:
+            self.signature_error_message = str(e)
             pass
 
         return False

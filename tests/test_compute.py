@@ -1,14 +1,17 @@
 #
-# Copyright 2021 Ocean Protocol Foundation
+# Copyright 2023 Ocean Protocol Foundation
 # SPDX-License-Identifier: Apache-2.0
 #
-import time
-from eth_account import Account
-from datetime import datetime
 import os
+import time
+from datetime import datetime
 
+import pytest
+import requests
+from eth_account import Account
 from ocean_provider.constants import BaseURLs
 from ocean_provider.utils.accounts import sign_message
+from ocean_provider.utils.compute_environments import get_c2d_environments
 from ocean_provider.utils.currency import to_wei
 from ocean_provider.utils.datatoken import get_datatoken_contract
 from ocean_provider.utils.provider_fees import get_provider_fees
@@ -22,13 +25,10 @@ from tests.helpers.compute_helpers import (
     get_future_valid_until,
     get_possible_compute_job_status_text,
     get_registered_asset,
-    get_web3,
     mint_100_datatokens,
     post_to_compute,
     start_order,
 )
-
-import pytest
 from tests.helpers.ddo_dict_builders import build_metadata_dict_type_algorithm
 from tests.test_auth import create_token
 from tests.test_helpers import get_first_service_by_type, get_ocean_token_address
@@ -80,7 +80,7 @@ def test_compute_raw_algo(
         free_c2d_env["consumerAddress"],
         sa.index,
         get_provider_fees(
-            dataset_ddo_w_compute_service.did,
+            dataset_ddo_w_compute_service,
             sa,
             consumer_wallet.address,
             valid_until,
@@ -275,8 +275,8 @@ def test_compute(client, publisher_wallet, consumer_wallet, free_c2d_env):
     )
     assert result_without_signature.status_code == 400
     assert (
-        result_without_signature.json["errors"]["signature"][0]
-        == "Invalid signature provided."
+        "Invalid signature provided."
+        in result_without_signature.json["errors"]["signature"][0]
     ), "Signature should be required"
 
     nonce, signature = get_compute_signature(client, consumer_wallet, index, job_id)
@@ -409,7 +409,7 @@ def test_compute_allow_all_published(
 
 @pytest.mark.integration
 def test_compute_additional_input(
-    client, publisher_wallet, consumer_wallet, monkeypatch, free_c2d_env
+    client, publisher_wallet, consumer_wallet, monkeypatch, free_c2d_env, web3
 ):
     valid_until = get_future_valid_until()
     ddo, tx_id, alg_ddo, alg_tx_id = build_and_send_ddo_with_compute_service(
@@ -432,7 +432,6 @@ def test_compute_additional_input(
         custom_services_args=ddo.services[0].compute_dict["publisherTrustedAlgorithms"],
     )
 
-    web3 = get_web3()
     sa2 = get_first_service_by_type(ddo2, ServiceType.COMPUTE)
     mint_100_datatokens(
         web3, sa2.datatoken_address, consumer_wallet.address, publisher_wallet
@@ -444,7 +443,7 @@ def test_compute_additional_input(
         free_c2d_env["consumerAddress"],
         sa2.index,
         get_provider_fees(
-            ddo2.did,
+            ddo2,
             sa2,
             consumer_wallet.address,
             valid_until,
@@ -559,10 +558,10 @@ def test_compute_delete_job(
 
 
 @pytest.mark.unit
-def test_compute_environments(client):
-    compute_envs_endpoint = BaseURLs.SERVICES_URL + "/computeEnvironments"
-    response = client.get(compute_envs_endpoint)
-    for env in response.json:
+def test_compute_environments():
+    environments = get_c2d_environments()
+
+    for env in environments[8996]:
         if env["priceMin"] == 0:
             assert env["id"] == "ocean-compute"
 
@@ -605,7 +604,6 @@ def test_compute_paid_env(
         "nonce": nonce,
         "consumerAddress": consumer_wallet.address,
         "environment": paid_c2d_env["id"],
-        "signature": signature,
     }
 
     # Start compute with valid signature
@@ -614,7 +612,7 @@ def test_compute_paid_env(
 
     job_info = response.json[0]
     print(f"got response from starting compute job: {job_info}")
-    job_id = job_info.get("jobId", "")
+    _ = job_info.get("jobId", "")
 
 
 @pytest.mark.integration

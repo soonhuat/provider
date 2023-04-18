@@ -1,5 +1,5 @@
 #
-# Copyright 2021 Ocean Protocol Foundation
+# Copyright 2023 Ocean Protocol Foundation
 # SPDX-License-Identifier: Apache-2.0
 #
 import logging
@@ -31,26 +31,36 @@ def verify_signature(signer_address, signature, original_msg, nonce):
     :return: True if signature is valid, throws InvalidSignatureError otherwise
     """
     verify_nonce(signer_address, nonce)
-
     message = f"{original_msg}{str(nonce)}"
-    signature_bytes = Web3.toBytes(hexstr=signature)
-    if signature_bytes[64] == 27:
-        new_signature = b"".join([signature_bytes[0:64], b"\x00"])
-    elif signature_bytes[64] == 28:
-        new_signature = b"".join([signature_bytes[0:64], b"\x01"])
-    else:
-        new_signature = signature_bytes
 
-    signature = keys.Signature(signature_bytes=new_signature)
-    message_hash = Web3.solidityKeccak(
-        ["bytes"],
-        [Web3.toBytes(text=message)],
-    )
-    prefix = "\x19Ethereum Signed Message:\n32"
-    signable_hash = Web3.solidityKeccak(
-        ["bytes", "bytes"], [Web3.toBytes(text=prefix), Web3.toBytes(message_hash)]
-    )
-    vkey = keys.ecdsa_recover(signable_hash, signature)
+    try:
+        signature_bytes = Web3.toBytes(hexstr=signature)
+        if signature_bytes[64] == 27:
+            new_signature = b"".join([signature_bytes[0:64], b"\x00"])
+        elif signature_bytes[64] == 28:
+            new_signature = b"".join([signature_bytes[0:64], b"\x01"])
+        else:
+            new_signature = signature_bytes
+
+        signature = keys.Signature(signature_bytes=new_signature)
+
+        message_hash = Web3.solidityKeccak(
+            ["bytes"],
+            [Web3.toBytes(text=message)],
+        )
+        prefix = "\x19Ethereum Signed Message:\n32"
+        signable_hash = Web3.solidityKeccak(
+            ["bytes", "bytes"], [Web3.toBytes(text=prefix), Web3.toBytes(message_hash)]
+        )
+        vkey = keys.ecdsa_recover(signable_hash, signature)
+    except Exception as e:
+        msg = (
+            f"Invalid signature {signature} for "
+            f"ethereum address {signer_address}, message {original_msg} "
+            f"and nonce {nonce}. Got {e}"
+        )
+        logger.error(msg)
+        raise InvalidSignatureError(msg)
 
     if Web3.toChecksumAddress(signer_address) != Web3.toChecksumAddress(
         vkey.to_address()

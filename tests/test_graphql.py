@@ -1,21 +1,16 @@
 #
-# Copyright 2021 Ocean Protocol Foundation
+# Copyright 2023 Ocean Protocol Foundation
 # SPDX-License-Identifier: Apache-2.0
 #
-import copy
-import time
 import json
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 from ocean_provider.constants import BaseURLs
 from ocean_provider.utils.accounts import sign_message
 from ocean_provider.utils.provider_fees import get_provider_fees
 from ocean_provider.utils.services import ServiceType
-from tests.test_auth import create_token
 from tests.test_helpers import (
-    get_dataset_ddo_with_multiple_files,
     get_first_service_by_type,
     get_registered_asset,
     mint_100_datatokens,
@@ -28,16 +23,16 @@ def test_download_graphql_asset(client, publisher_wallet, consumer_wallet, web3)
     unencrypted_files_list = [
         {
             "type": "graphql",
-            "url": "http://172.15.0.15:8000/subgraphs/name/oceanprotocol/ocean-subgraph",
+            "url": "http://172.15.0.15:8030/graphql",
             "query": """
-                    query{
-                        nfts(orderBy: createdTimestamp,orderDirection:desc){
-                            id
-                            symbol
-                            createdTimestamp
+                        query {
+                            indexingStatuses {
+                              subgraph
+                              chains
+                              node
+                            }
                         }
-                    }
-                    """,
+                        """,
         }
     ]
     asset = get_registered_asset(
@@ -52,7 +47,7 @@ def test_download_graphql_asset(client, publisher_wallet, consumer_wallet, web3)
         service.datatoken_address,
         consumer_wallet.address,
         service.index,
-        get_provider_fees(asset.did, service, consumer_wallet.address, 0),
+        get_provider_fees(asset, service, consumer_wallet.address, 0),
         consumer_wallet,
     )
 
@@ -84,15 +79,15 @@ def test_download_graphql_asset_with_userdata(
     unencrypted_files_list = [
         {
             "type": "graphql",
-            "url": "http://172.15.0.15:8000/subgraphs/name/oceanprotocol/ocean-subgraph",
+            "url": "http://172.15.0.15:8030/graphql",
             "query": """
-                    query nfts($nftAddress: String){
-                        nfts(where: {id:$nftAddress},orderBy: createdTimestamp,orderDirection:desc){
-                            id
-                            symbol
-                            createdTimestamp
+                    query GetSubgraph($name: [String!]){
+                          indexingStatuses(subgraphs: $name) {
+                            subgraph
+                            chains
+                            node
+                          }
                         }
-                    }
                     """,
         }
     ]
@@ -101,11 +96,12 @@ def test_download_graphql_asset_with_userdata(
         unencrypted_files_list=unencrypted_files_list,
         custom_userdata=[
             {
-                "name": "nftAddress",
+                "name": "name",
                 "type": "text",
-                "label": "nftAddress",
+                "label": "name",
                 "required": True,
-                "description": "Nft to search for",
+                "description": "Subgraph indexing status",
+                "default": ["subgraph"],
             }
         ],
     )
@@ -118,7 +114,7 @@ def test_download_graphql_asset_with_userdata(
         service.datatoken_address,
         consumer_wallet.address,
         service.index,
-        get_provider_fees(asset.did, service, consumer_wallet.address, 0),
+        get_provider_fees(asset, service, consumer_wallet.address, 0),
         consumer_wallet,
     )
 
@@ -128,7 +124,7 @@ def test_download_graphql_asset_with_userdata(
         "consumerAddress": consumer_wallet.address,
         "transferTxId": tx_id,
         "fileIndex": 0,
-        "userdata": json.dumps({"nftAddress": asset.nftAddress.lower()}),
+        "userdata": json.dumps({"name": ["subgraph"]}),
     }
 
     download_endpoint = BaseURLs.SERVICES_URL + "/download"
@@ -142,7 +138,5 @@ def test_download_graphql_asset_with_userdata(
     )
     assert response.status_code == 200, f"{response.data}"
     reply = json.loads(response.data)
-    assert (
-        len(reply["data"]["nfts"]) == 1
-    )  # make sure our parametrized query works, otherwise we will get a lot of nfts
-    assert reply["data"]["nfts"][0]["id"] == asset.nftAddress.lower()
+    assert len(reply["data"]) == 1
+    assert "indexingStatuses" in reply["data"].keys()
