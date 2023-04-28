@@ -50,6 +50,10 @@ ENV OCEAN_PROVIDER_URL='http://0.0.0.0:8030'
 ENV OCEAN_PROVIDER_WORKERS='1'
 ENV OCEAN_PROVIDER_TIMEOUT='9000'
 ENV ALLOW_NON_PUBLIC_IP=False
+ENV ARWEAVE_GATEWAY=https://arweave.net/
+ENV IPFS_GATEWAY=https://ipfs.io
+ENV ADDRESS_FILE='./addresses/address.json'
+
 
 ENTRYPOINT ["/ocean-provider/docker-entrypoint.sh"]
 
